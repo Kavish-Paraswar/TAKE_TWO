@@ -113,4 +113,3 @@ if "run_id" in st.session_state:
             st.error("Approval failed: " + r.text)
 
     time.sleep(5)
-    st.experimental_rerun()
