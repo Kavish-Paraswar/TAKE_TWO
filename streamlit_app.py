@@ -14,23 +14,24 @@ if st.button("Create Brief"):
 
     if r.status_code == 200:
         st.session_state.brief_id = r.json()["id"]
-        st.success("Brief created:", st.session_state.brief_id)
+        st.success("Brief created: " + str(st.session_state.brief_id))
     else:
-        st.error("Brief creation failed:", r.text)
+        st.error("Brief creation failed: " + r.text)
 
 if st.button("Start Creative Run"):
-    r = requests.post(
-        API + "/runs/start",
-        params={
-            "title": title,
-            "description": description
-        }
-    )
-
-    if r.status_code == 200:
-        st.session_state.run_id = r.json()["run_id"]
-        st.success("Run started: " + str(st.session_state.run_id))
-
+    if "brief_id" not in st.session_state:
+        st.error("Please create a brief first")
     else:
-        st.error("Run start failed:", r.text)
+        r = requests.post(
+            API + "/runs/start",
+            params={
+                "title": title,
+                "description": description
+            }
+        )
 
+        if r.status_code == 200:
+            st.session_state.run_id = r.json()["run_id"]
+            st.success("Run started: " + str(st.session_state.run_id))
+        else:
+            st.error("Run start failed: " + r.text)
