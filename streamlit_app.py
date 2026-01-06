@@ -14,7 +14,7 @@ if st.button("Create Brief"):
 
     if r.status_code == 200:
         st.session_state.brief_id = r.json()["id"]
-        st.success("Brief created: " + st.session_state.brief_id)
+        st.success("Brief created: " + str(st.session_state.brief_id))
     else:
         st.error("Brief creation failed")
 
