@@ -1,7 +1,8 @@
 import streamlit as st
 import requests
 
-API = "http://127.0.0.1:8000"
+API = "https://take-two.onrender.com"
+# API = "http://127.0.0.1:8000"
 
 st.title("Creative Ops Desk")
 
