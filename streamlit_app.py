@@ -29,7 +29,8 @@ if st.button("Start Creative Run"):
 
     if r.status_code == 200:
         st.session_state.run_id = r.json()["run_id"]
-        st.success("Run started:", st.session_state.run_id)
+        st.success("Run started: " + str(st.session_state.run_id))
+
     else:
         st.error("Run start failed:", r.text)
 
