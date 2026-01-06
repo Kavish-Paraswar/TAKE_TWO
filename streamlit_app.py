@@ -13,7 +13,6 @@ st.sidebar.header("Controls")
 title = st.text_input("Brief Title")
 description = st.text_area("Brief Description")
 
-# create brief only once
 if st.button("Create Brief"):
     if not title or not description:
         st.error("Title and description are required")
@@ -27,135 +26,91 @@ if st.button("Create Brief"):
         else:
             st.error("Brief creation failed: " + r.text)
 
-# show active brief info
 if "brief_id" in st.session_state:
     st.sidebar.write("Active Brief ID: " + str(st.session_state.brief_id))
 
-    # start creative run only once per brief
     if st.button("Start Creative Run"):
-        r = requests.post(API + "/runs/start", params={
+        params = {
             "title": title,
             "description": description
-        })
+        }
+
+        r = requests.post(API + "/runs/start", params=params)
 
         if r.status_code == 200:
             data = r.json()
+
+            # save only the keys that really exist
             st.session_state.run_id = data["run_id"]
-            st.session_state.client_token = data["client_token"]
+
+            # fixed token handling safely
+            if "client_token" in data:
+                st.session_state.client_token = data["client_token"]
+            elif "token" in data:
+                st.session_state.client_token = data["token"]
+            else:
+                st.session_state.client_token = None
+
             st.success("Run started: " + str(st.session_state.run_id))
         else:
             st.error("Run start failed: " + r.text)
 
-# once run started, show dashboard
 if "run_id" in st.session_state:
-    st.sidebar.write("Active Run ID: " + str(st.session_state.run_id))
+    run_id = st.session_state.run_id
+    token = st.session_state.get("client_token")
 
-    status_url = API + f"/runs/{st.session_state.run_id}/status"
-    agents_url = API + f"/runs/{st.session_state.run_id}/agents"
-    outputs_url = API + f"/runs/{st.session_state.run_id}/outputs"
-    approve_url = API + f"/runs/{st.session_state.run_id}/approve"
-    interrupt_url = API + f"/runs/{st.session_state.run_id}/interrupt"
+    st.sidebar.write("Active Run ID: " + str(run_id))
 
-    token = st.session_state.client_token
+    st.subheader("Run Status")
 
-    col1, col2 = st.columns(2)
+    r = requests.get(API + f"/runs/{run_id}/status", params={"token": token})
 
-    with col1:
-        st.subheader("Run Status")
+    if r.status_code == 200:
+        data = r.json()
 
-        # auto refresh status
-        r = requests.get(status_url, params={"token": token})
+        st.json(data)
+        progress = data.get("progress", 0)
+        st.progress(progress / 100)
+    else:
+        st.error("Could not fetch status: " + r.text)
 
-        if r.status_code == 200:
-            data = r.json()
-
-            st.json(data)
-
-            progress = data.get("progress", 0)
-            st.progress(progress / 100)
-
-            st.write("Current State: " + str(data.get("state", "UNKNOWN")))
-            st.write("Iteration: " + str(data.get("iteration", 0)))
-            st.write("Budget Used: " + str(data.get("budget_used", 0)))
-        else:
-            st.error("Could not fetch status: " + r.text)
-
-    with col2:
-        st.subheader("Director Actions")
-
-        # approve run
-        if st.button("Approve Run"):
-            r = requests.post(approve_url, params={"token": token})
-
-            if r.status_code == 200:
-                st.success("Run approved successfully")
-            else:
-                st.error("Approve failed: " + r.text)
-
-        # interrupt run
-        if st.button("Interrupt Run"):
-            r = requests.post(interrupt_url, params={"token": token})
-
-            if r.status_code == 200:
-                st.warning("Run interrupted")
-                st.session_state.pop("run_id")
-                st.session_state.pop("client_token")
-            else:
-                st.error("Interrupt failed: " + r.text)
-
-    # show agent timeline logs
     st.subheader("Agent Timeline Logs")
 
-    r = requests.get(agents_url, params={"token": token})
+    r = requests.get(API + f"/runs/{run_id}/agents", params={"token": token})
 
     if r.status_code == 200:
         logs = r.json()
-
-        if not logs:
-            st.write("No agent messages yet. Refreshing...")
-        else:
-            for msg in logs:
-                agent = msg.get("agent", "AGENT")
-                content = msg.get("content", "")
-                iteration = msg.get("iteration", 0)
-
-                st.info(f"[Iteration {iteration}] {agent}: {content}")
+        for msg in logs:
+            st.info(f"{msg.get('agent','AGENT')} : {msg.get('content','')}")
     else:
         st.error("Could not load agent logs: " + r.text)
 
-    # show generated outputs
-    st.subheader("Generated Outputs Gallery")
+    st.subheader("Generated Outputs")
 
-    r = requests.get(outputs_url, params={"token": token})
+    r = requests.get(API + f"/runs/{run_id}/outputs", params={"token": token})
 
     if r.status_code == 200:
         outputs = r.json()
-
-        if not outputs:
-            st.write("No outputs generated yet. Refreshing automatically...")
-            time.sleep(2)
-            st.experimental_rerun()
-        else:
-            cols = st.columns(3)
-
-            for idx, o in enumerate(outputs):
-                with cols[idx % 3]:
-                    asset = o.get("asset_url")
-                    score = o.get("score", "NA")
-
-                    if asset:
-                        st.image(asset, caption="Score: " + str(score))
-                    else:
-                        st.write("Asset unavailable")
+        for o in outputs:
+            if o.get("asset_url"):
+                st.image(o["asset_url"], caption="Score: " + str(o.get("score","NA")))
     else:
         st.error("Could not fetch outputs: " + r.text)
 
-    st.sidebar.subheader("Manual Refresh")
+    if st.sidebar.button("Interrupt Run"):
+        r = requests.post(API + f"/runs/{run_id}/interrupt", params={"token": token})
+        if r.status_code == 200:
+            st.warning("Run interrupted")
+            st.session_state.pop("run_id")
+        else:
+            st.error("Interrupt failed: " + r.text)
 
-    if st.sidebar.button("Refresh Dashboard"):
-        st.experimental_rerun()
+    if st.sidebar.button("Approve Run"):
+        r = requests.post(API + f"/runs/{run_id}/approve", params={"token": token})
+        if r.status_code == 200:
+            st.success("Run approved")
+        else:
+            st.error("Approval failed: " + r.text)
 
-    # refresh every 5 seconds
-    st.sidebar.write("Auto-refreshing status every 5 seconds...")
     time.sleep(5)
     st.experimental_rerun()
