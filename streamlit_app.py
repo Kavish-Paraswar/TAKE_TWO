@@ -11,7 +11,7 @@ brief_desc = st.text_area("Brief Description")
 
 if st.button("Start Creative Run"):
     payload = {"title": brief_title, "description": brief_desc}
-    r = requests.post(API + "/runs", json=payload)
+    r = requests.post(API + "/runs/start", json={"brief_id": brief_id})
     if r.status_code == 200:
         st.success("Run started: " + r.json()["run_id"])
     else:
