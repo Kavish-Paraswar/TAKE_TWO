@@ -14,27 +14,22 @@ if st.button("Create Brief"):
 
     if r.status_code == 200:
         st.session_state.brief_id = r.json()["id"]
-        st.success("Brief created: " + str(st.session_state.brief_id))
+        st.success("Brief created:", st.session_state.brief_id)
     else:
-        st.error("Brief creation failed")
+        st.error("Brief creation failed:", r.text)
 
-if "brief_id" in st.session_state:
-    if st.button("Start Creative Run"):
-        b_id = st.session_state.brief_id
+if st.button("Start Creative Run"):
+    r = requests.post(
+        API + "/runs/start",
+        params={
+            "title": title,
+            "description": description
+        }
+    )
 
-        r = requests.post(API + "/runs/start", json={"brief_id": b_id})
-
-        if r.status_code == 200:
-            st.session_state.run_id = r.json()["run_id"]
-            st.success("Run started: " + st.session_state.run_id)
-        else:
-            st.error("Run start failed")
-
-if "run_id" in st.session_state:
-    if st.button("View Outputs"):
-        r = requests.get(API + "/runs/" + st.session_state.run_id + "/outputs")
-        if r.status_code == 200:
-            st.write(r.json())
-        else:
-            st.error("Could not load outputs")
+    if r.status_code == 200:
+        st.session_state.run_id = r.json()["run_id"]
+        st.success("Run started:", st.session_state.run_id)
+    else:
+        st.error("Run start failed:", r.text)
 
