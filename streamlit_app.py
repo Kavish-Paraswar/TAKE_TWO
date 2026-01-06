@@ -127,7 +127,10 @@ if "run_id" in st.session_state:
                 "**Agent:** " + str(agent.upper())
             )
             st.write("Iteration: " + str(iteration))
-            st.json(content)
+            if isinstance(content, dict):
+                st.json(content)
+            else:
+                st.write(str(content))
     else:
         st.error("Could not load agent logs: " + r.text)
 
