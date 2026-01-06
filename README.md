@@ -12,6 +12,7 @@ Multi-agent creative ops desk: users submit a brief, agents plan, generate, crit
 
 ## Architecture (high level)
 
+![alt text](Architecture.png)
 
 
 - **Frontend (React + Vite)**:  Brief form, run controls, agent timeline, and output gallery. Polls backend for status, logs, and outputs. Key files: `frontend/src/App.jsx`, `frontend/src/components/Timeline.jsx`, `frontend/src/components/OutputGallery.jsx`.
