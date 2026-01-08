@@ -2,10 +2,6 @@ import re
 from typing import List, Dict
 
 def run(brief_text: str) -> List[Dict]:
-    """
-    Generic planner agent.
-    Converts any free-form brief into structured tasks using linguistic heuristics.
-    """
 
     text = brief_text.strip()
     text_lower = text.lower()
@@ -13,11 +9,9 @@ def run(brief_text: str) -> List[Dict]:
     tasks = []
     task_id = 0
 
-    # 1. Split brief into logical units
     separators = r"\.|,| and | then | also | plus | with "
     chunks = [c.strip() for c in re.split(separators, text) if len(c.strip()) > 3]
 
-    # 2. Extract modifiers (styles, tones, constraints)
     modifiers = []
     modifier_patterns = [
         r"dark|light|bright|dramatic|minimal|flat|realistic|cinematic",
@@ -34,8 +28,6 @@ def run(brief_text: str) -> List[Dict]:
 
     if not modifiers:
         modifiers.append("default style")
-
-    # 3. Detect actions (verbs)
     actions = []
     verb_patterns = r"\b(create|design|generate|build|produce|write|draft|make|render|compose)\b"
     actions = re.findall(verb_patterns, text_lower)
@@ -54,7 +46,6 @@ def run(brief_text: str) -> List[Dict]:
             })
             task_id += 1
 
-    # 5. Fallback safeguard
     if not tasks:
         tasks.append({
             "task_id": 0,

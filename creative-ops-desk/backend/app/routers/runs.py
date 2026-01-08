@@ -14,20 +14,19 @@ def get_db():
 @router.post("/start")
 def start_run_from_brief(title: str = Query(...), description: str = Query(...),
                          background_tasks: BackgroundTasks = None, db: Session = Depends(get_db)):
-    # create brief
+    
     brief = models.CreativeBrief(title=title, description=description)
     db.add(brief); db.commit(); db.refresh(brief)
 
-    # create run with token
+
     token = uuid.uuid4().hex
     run = models.CreativeRun(state="CREATED", iteration=0, progress=0, client_token=token)
     db.add(run); db.commit(); db.refresh(run)
 
-    # schedule background work
+    
     if background_tasks is not None:
         background_tasks.add_task(orchestrator.run_creative_pipeline, run.id, brief.description)
     else:
-        # fallback synchronous call (shouldn't happen)
         orchestrator.run_creative_pipeline(run.id, brief.description)
 
     return {"run_id": run.id, "brief_id": brief.id, "token": token, "state": run.state}

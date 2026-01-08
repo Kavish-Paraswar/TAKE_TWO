@@ -14,7 +14,7 @@ class CreativeRun(Base):
     state = Column(String, default="CREATED")  # CREATED, RUNNING, COMPLETED, FAILED, INTERRUPTED, APPROVED
     iteration = Column(Integer, default=0)
     progress = Column(Integer, default=0)
-    client_token = Column(String, unique=True, nullable=True)  # secret token for client access
+    client_token = Column(String, unique=True, nullable=True)  
 
 class AgentRun(Base):
     __tablename__ = "agent_runs"

@@ -16,13 +16,11 @@ def run_creative_pipeline(run_id: int, brief_text: str,
         run = db.query(models.CreativeRun).filter_by(id=run_id).first()
         if not run:
             return
-
-        # set running
         run.state = "RUNNING"
         run.progress = 0
         db.add(run); db.commit(); db.refresh(run)
 
-        # Planner
+
         planner_run = models.AgentRun(creative_run_id=run.id, agent_name="planner", iteration=0)
         db.add(planner_run); db.commit(); db.refresh(planner_run)
 
@@ -35,7 +33,6 @@ def run_creative_pipeline(run_id: int, brief_text: str,
         completed_tasks = 0
 
         for task_idx, task_obj in enumerate(tasks):
-            # check interrupt/approve between tasks
             run = db.query(models.CreativeRun).filter_by(id=run_id).first()
             if run.state == "INTERRUPTED":
                 db.add(models.AgentMessage(agent_run_id=planner_run.id, role="manager",
@@ -54,7 +51,6 @@ def run_creative_pipeline(run_id: int, brief_text: str,
             best_score = -1
 
             while True:
-                # generate variants concurrently
                 with ThreadPoolExecutor(max_workers=variants_per_task) as ex:
                     futures = []
                     for v in range(variants_per_task):
@@ -86,7 +82,6 @@ def run_creative_pipeline(run_id: int, brief_text: str,
                             best_score = crit.get("score", 0)
                             best_generation = g
 
-                # manager decision
                 should_repeat = manager.should_continue_task(best_score, task_iteration, score_threshold, max_task_iterations)
                 task_iteration += 1
 
@@ -96,7 +91,6 @@ def run_creative_pipeline(run_id: int, brief_text: str,
                                            content=f"Task '{task_text}' iteration {task_iteration} best_score={best_score} repeat={should_repeat}"))
                 db.commit()
 
-                # check interrupt after iteration
                 run = db.query(models.CreativeRun).filter_by(id=run_id).first()
                 if run.state == "INTERRUPTED":
                     db.add(models.AgentMessage(agent_run_id=arm.id, role="manager",
@@ -116,7 +110,6 @@ def run_creative_pipeline(run_id: int, brief_text: str,
             run.progress = int((completed_tasks / total_tasks) * 100)
             db.add(run); db.commit(); db.refresh(run)
 
-        # finalize
         run.state = "COMPLETED"
         run.iteration += 1
         run.progress = 100
